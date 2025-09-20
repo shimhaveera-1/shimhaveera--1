@@ -138,41 +138,46 @@ class TransformationSchema:
             })
             return [{}]
         
-        # For single-value system, each transformation contributes one value
-        # Generate combinations by including/excluding each transformation
+        # Use Priority structure for single-value system
         combinations = []
         
-        # CRITICAL FIX: Check if resize is enabled - if so, ensure resize-only is FIRST
-        resize_transformation = None
-        for transformation in enabled_transformations:
-            if transformation.tool_type == "resize":
-                resize_transformation = transformation
-                break
+        # Priority 1: Individual tools applied to original image
+        logger.info("operations.transformations", "Generating Priority 1 combinations (individual tools)", "priority1_generation_start", {
+            'tool_count': len(enabled_transformations)
+        })
         
-        # If resize is enabled, add resize-only as the FIRST combination (baseline)
-        if resize_transformation:
-            resize_only_combination = {
-                resize_transformation.tool_type: resize_transformation.parameters
+        for transformation in enabled_transformations:
+            individual_combination = {
+                transformation.tool_type: transformation.parameters
             }
-            combinations.append(resize_only_combination)
-            logger.info("operations.transformations", "Added resize-only as first combination (baseline)", "resize_baseline_added", {
-                'resize_parameters': resize_transformation.parameters
+            combinations.append(individual_combination)
+            logger.info("operations.transformations", f"Added Priority 1: {transformation.tool_type}", "priority1_added", {
+                'tool_type': transformation.tool_type,
+                'parameters': transformation.parameters
             })
         
-        # Generate all other possible combinations (2^n where n is number of transformations)
-        for i in range(1, 2 ** len(enabled_transformations)):
-            combination = {}
-            
-            for j, transformation in enumerate(enabled_transformations):
-                # Check if this transformation is included in current combination
-                if i & (1 << j):
-                    combination[transformation.tool_type] = transformation.parameters
-            
-            # Skip resize-only combination if we already added it as first
-            if resize_transformation and combination == {resize_transformation.tool_type: resize_transformation.parameters}:
-                continue
+        # Priority 3: Tool combinations (2+ tools together)
+        logger.info("operations.transformations", "Generating Priority 3 combinations (tool combinations)", "priority3_generation_start", {
+            'tool_count': len(enabled_transformations)
+        })
+        
+        # Generate all combinations of 2 or more tools
+        from itertools import combinations as iter_combinations
+        
+        for r in range(2, len(enabled_transformations) + 1):  # 2, 3, 4, ... tools
+            for tool_combo in iter_combinations(enabled_transformations, r):
+                combination = {}
+                tool_names = []
                 
-            combinations.append(combination)
+                for transformation in tool_combo:
+                    combination[transformation.tool_type] = transformation.parameters
+                    tool_names.append(transformation.tool_type)
+                
+                combinations.append(combination)
+                logger.info("operations.transformations", f"Added Priority 3: {'+'.join(tool_names)}", "priority3_added", {
+                    'tools': tool_names,
+                    'combination_size': len(tool_combo)
+                })
         
         logger.info("operations.transformations", f"Generated {len(combinations)} single-value combinations", "single_value_combinations_generated", {
             'combination_count': len(combinations),

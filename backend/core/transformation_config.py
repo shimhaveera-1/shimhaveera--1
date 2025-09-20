@@ -978,7 +978,7 @@ def calculate_max_images_per_original(transformations: list) -> dict:
         'resize_count': resize_count
     })
     
-    baseline_original = 1  # include_original is true in release config
+    # Original image is handled separately by UI, so we only count transformation combinations
     if dual_value_count > 0:
         logger.info("operations.transformations", f"Processing dual-value system", "dual_value_processing_start", {
             'dual_value_count': dual_value_count,
@@ -1004,7 +1004,7 @@ def calculate_max_images_per_original(transformations: list) -> dict:
             priority3_count += regular_count * (1 + min(total_dual_combinations, 4))
         
         variants = priority1_count + priority2_count + priority3_count
-        min_images = baseline_original + variants
+        min_images = 1 + variants  # Include original image (baseline_original = 1)
         max_images = min_images
         
         result = {
@@ -1032,14 +1032,22 @@ def calculate_max_images_per_original(transformations: list) -> dict:
         })
         
         # Single-value system (no dual-value tools)
-        # Calculate 2^n combinations for n single-value tools
+        # Use Priority structure like dual system but for single-value tools
         if regular_count > 0:
-            # 2^n possible combinations (including empty combination)
-            # But we exclude empty combination, so 2^n - 1 actual combinations
-            max_combinations = (2 ** regular_count) - 1
-            max_images = baseline_original + max_combinations
+            # Priority 1: Each tool applied individually to original image
+            priority1_count = regular_count
+            
+            # Priority 2: No auto values for single-value tools
+            priority2_count = 0
+            
+            # Priority 3: Tool combinations (2^n - 1 - n) = combinations beyond individual tools
+            # Total combinations = 2^n - 1, minus individual tools = 2^n - 1 - n
+            total_combinations = (2 ** regular_count) - 1
+            priority3_count = total_combinations - regular_count
+            
+            max_images = 1 + priority1_count + priority2_count + priority3_count  # Include original image
         else:
-            max_images = baseline_original
+            max_images = 1  # Just original image
         
         result = {
             "min": max_images,

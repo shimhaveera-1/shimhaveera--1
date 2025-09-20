@@ -31,6 +31,9 @@ from core.transformation_schema import generate_release_configurations
 from logging_system.professional_logger import get_professional_logger, log_info, log_error, log_warning, log_critical
 
 # Import transformation debugger
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
 from TRANSFORMATION_DEBUG import TransformationDebugger
 
 # Initialize professional logger
