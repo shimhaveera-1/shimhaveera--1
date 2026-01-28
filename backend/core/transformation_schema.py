@@ -159,7 +159,8 @@ class TransformationSchema:
                 'resize_parameters': resize_transformation.parameters
             })
         
-        # Generate all other possible combinations (2^n where n is number of transformations)
+        # Generate all other possible combinations (2^n - 1 where n is number of transformations)
+        # Start from 1 to exclude empty combination {} (original image is handled separately by UI)
         for i in range(1, 2 ** len(enabled_transformations)):
             combination = {}
             
@@ -167,7 +168,7 @@ class TransformationSchema:
                 # Check if this transformation is included in current combination
                 if i & (1 << j):
                     combination[transformation.tool_type] = transformation.parameters
-            
+                
             # Skip resize-only combination if we already added it as first
             if resize_transformation and combination == {resize_transformation.tool_type: resize_transformation.parameters}:
                 continue

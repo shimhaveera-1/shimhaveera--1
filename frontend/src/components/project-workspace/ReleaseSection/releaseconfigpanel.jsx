@@ -243,8 +243,11 @@ const ReleaseConfigPanel = ({ onGenerate, onPreview, transformations = [], selec
         console.log('📊 Response data:', data);
         
         if (data.max_images_per_original) {
-          console.log('✅ Setting maxCombinations to:', data.max_images_per_original);
-          setMaxCombinations(data.max_images_per_original);
+          console.log('✅ Backend returned:', data.max_images_per_original);
+          // Add +1 for original image to get total max combinations
+          const totalMaxCombinations = data.max_images_per_original + 1;
+          console.log('✅ Setting maxCombinations to:', totalMaxCombinations, '(backend + 1 for original)');
+          setMaxCombinations(totalMaxCombinations);
           // Set current user selection in form if it exists
           if (data.user_selected_images_per_original) {
             form.setFieldsValue({ multiplier: data.user_selected_images_per_original });
@@ -292,13 +295,16 @@ const ReleaseConfigPanel = ({ onGenerate, onPreview, transformations = [], selec
           if (data.success && data.versions) {
             const versionData = data.versions.find(v => v.version === currentReleaseVersion);
             if (versionData && versionData.max_combinations) {
-              console.log('✅ Fallback: Setting maxCombinations to:', versionData.max_combinations);
-              setMaxCombinations(versionData.max_combinations);
+              console.log('✅ Fallback backend returned:', versionData.max_combinations);
+              // Add +1 for original image to get total max combinations
+              const totalMaxCombinations = versionData.max_combinations + 1;
+              console.log('✅ Fallback: Setting maxCombinations to:', totalMaxCombinations, '(backend + 1 for original)');
+              setMaxCombinations(totalMaxCombinations);
               
               logInfo('app.frontend.interactions', 'fallback_api_success', 'Fallback API successful for release configuration', {
                 timestamp: new Date().toISOString(),
                 currentReleaseVersion: currentReleaseVersion,
-                maxCombinations: versionData.max_combinations,
+                maxCombinations: totalMaxCombinations,
                 function: 'fetchReleaseConfig'
               });
             }
